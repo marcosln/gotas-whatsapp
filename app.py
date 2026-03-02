@@ -38,11 +38,11 @@ logger = logging.getLogger(__name__)
 TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 TWILIO_WHATSAPP_NUMBER = os.getenv('TWILIO_WHATSAPP_NUMBER')
-USER_WHATSAPP_NUMBER = os.getenv('USER_WHATSAPP_NUMBER', '+529612254590')
+USER_WHATSAPP_NUMBER = os.getenv('USER_WHATSAPP_NUMBER', '+5219612254590')
 
 # Números para enviar recordatorios (ambos reciben los mensajes)
-GIRLFRIEND_NUMBER = '+529612324432'  # Número de tu novia
-YOUR_NUMBER = '+529612254590'  # Tu número
+GIRLFRIEND_NUMBER = '+5219612324432'  # Número de tu novia
+YOUR_NUMBER = '+5219612254590'  # Tu número
 
 # Zona horaria de México
 TIMEZONE = 'America/Mexico_City'
