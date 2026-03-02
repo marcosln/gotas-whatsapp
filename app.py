@@ -260,12 +260,13 @@ def handle_incoming_message(from_number, message_body):
         now = datetime.now(tz)
         num_reminders = schedule_drop_reminders(now)
 
+        # No enviar respuesta adicional aquí - el mensaje con la agenda ya se envió en schedule_drop_reminders
         response = (
-            f"✅ ¡Perfecto! He generado tu agenda de gotas.\n"
-            f"📅 Fecha: {now.strftime('%d/%m/%Y')}\n"
+            f"✅ ¡Perfecto! Agenda activada.\n"
+            f"📅 {now.strftime('%d/%m/%Y')}\n"
             f"🕐 Inicio: {now.strftime('%H:%M')}\n"
-            f"⏰ Recordatorios programados: {num_reminders}\n\n"
-            f"Te enviaré un WhatsApp a cada hora con el recordatorio."
+            f"⏰ {num_reminders} recordatorios hasta 01:00 AM\n\n"
+            f"Revisa el mensaje anterior con tu agenda completa 💧"
         )
 
     # Mensaje para dormir/detener
