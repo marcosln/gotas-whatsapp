@@ -236,13 +236,7 @@ def schedule_drop_reminders(start_time, user_number=None):
         drops_list = [f"{d['emoji']} {d['name']}" for d in slot_data['drops']]
         time_str = slot_data['datetime'].strftime('%H:%M')
 
-        reminder_message = (
-            f"⏰ *HORA DE GOTAS*\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"🕐 {time_str}\n\n"
-            f"Aplica ahora:\n{chr(10).join(drops_list)}\n\n"
-            f"💧💊⚠️"
-        )
+        reminder_message = f"{', '.join(drops_list)}"
 
         job_id = f"drop_{time_key}"
 
