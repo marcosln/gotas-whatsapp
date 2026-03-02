@@ -52,6 +52,10 @@ DROPS_CONFIG = {
     'CICLOSPORINA A': {'interval_hours': 8, 'emoji': '⚠️'}
 }
 
+# Configuración de notificaciones
+NOTIFICATION_END_HOUR = 1  # Hasta las 1:00 AM (del día siguiente)
+DROP_DELAY_MINUTES = 5  # Minutos de diferencia entre gotas que coinciden
+
 # Inicializar cliente de Twilio
 twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
@@ -81,10 +85,19 @@ def send_whatsapp_message(to_number, message_body):
 def calculate_drop_schedule(start_time):
     """
     Calcula los horarios de todas las gotas basándose en la hora de inicio.
-    Genera horarios hasta las 23:00 del día actual.
+    Genera horarios hasta las 1:00 AM del día siguiente.
     """
     schedule = {}
-    end_of_day = start_time.replace(hour=23, minute=0, second=0, microsecond=0)
+
+    # Calcular hora final (1 AM del día siguiente)
+    if NOTIFICATION_END_HOUR < start_time.hour:
+        # Si la hora final es menor que la hora actual, es del día siguiente
+        from datetime import date
+        tomorrow = start_time.date() + timedelta(days=1)
+        end_of_day = datetime.combine(tomorrow, datetime.min.time().replace(hour=NOTIFICATION_END_HOUR))
+        end_of_day = tz.localize(end_of_day)
+    else:
+        end_of_day = start_time.replace(hour=NOTIFICATION_END_HOUR, minute=0, second=0, microsecond=0)
 
     for drop_name, config in DROPS_CONFIG.items():
         interval = config['interval_hours']
@@ -93,7 +106,7 @@ def calculate_drop_schedule(start_time):
         drop_times = []
         current_time = start_time
 
-        # Generar horarios hasta las 23:00
+        # Generar horarios hasta las 1:00 AM
         while current_time <= end_of_day:
             drop_times.append({
                 'time': current_time,
@@ -109,8 +122,8 @@ def calculate_drop_schedule(start_time):
 
 def group_drops_by_time(schedule):
     """
-    Agrupa las gotas por hora para enviar mensajes combinados
-    cuando varias gotas coinciden en el mismo horario.
+    Agrupa las gotas por hora. Si varias gotas coinciden,
+    las separa por 5 minutos de diferencia.
     """
     time_slots = {}
 
@@ -129,10 +142,24 @@ def group_drops_by_time(schedule):
                 'emoji': drop_info['emoji']
             })
 
-    # Ordenar por tiempo
-    sorted_slots = sorted(time_slots.items(), key=lambda x: x[1]['datetime'])
+    # Si hay más de una gota en el mismo horario, separarlas por 5 minutos
+    final_schedule = []
+    for time_key, slot_data in sorted(time_slots.items(), key=lambda x: x[1]['datetime']):
+        if len(slot_data['drops']) > 1:
+            # Separar gotas por 5 minutos
+            for i, drop in enumerate(slot_data['drops']):
+                adjusted_time = slot_data['datetime'] + timedelta(minutes=i * DROP_DELAY_MINUTES)
+                final_schedule.append({
+                    'datetime': adjusted_time,
+                    'drops': [drop]
+                })
+        else:
+            final_schedule.append(slot_data)
 
-    return sorted_slots
+    # Ordenar por tiempo final
+    final_schedule.sort(key=lambda x: x['datetime'])
+
+    return [(f"drop_{i}", slot) for i, slot in enumerate(final_schedule)]
 
 
 def clear_previous_jobs():
@@ -155,19 +182,22 @@ def schedule_drop_reminders(start_time):
     """
     global scheduled_jobs
 
-    # Limpiar trabajos anteriores
+    # Limpiar trabajos anteriores (se borran automáticamente los del día anterior)
     clear_previous_jobs()
 
     # Calcular horarios
     schedule = calculate_drop_schedule(start_time)
     grouped_schedule = group_drops_by_time(schedule)
 
-    # Mensaje de confirmación
+    # Mensaje de confirmación con agenda completa
+    now_local = datetime.now(tz)
     confirmation_msg = (
-        f"✅ *Protocolo de Gotas Iniciado*\n"
+        f"✅ *PROTOCOLO INICIADO*\n"
         f"━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🕐 Hora de inicio: {start_time.strftime('%H:%M')}\n\n"
-        f"📋 *Tu agenda de hoy:*\n"
+        f"📅 {now_local.strftime('%d/%m/%Y')}\n"
+        f"🕐 Inicio: {start_time.strftime('%H:%M')}\n"
+        f"⏰ Hasta: 01:00 AM\n\n"
+        f"📋 *AGENDA DE HOY:*\n"
     )
 
     for time_key, slot_data in grouped_schedule:
@@ -177,7 +207,8 @@ def schedule_drop_reminders(start_time):
 
     confirmation_msg += (
         f"\n━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"💬 Escribe 'DORMIR' para detener los recordatorios."
+        f"✅ Recordatorios anteriores borrados\n"
+        f"💬 Escribe 'DORMIR' para detener"
     )
 
     # Enviar mensaje de confirmación
