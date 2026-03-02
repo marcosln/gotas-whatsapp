@@ -70,9 +70,19 @@ scheduled_jobs = {}
 def send_whatsapp_message(to_number, message_body):
     """Envía un mensaje de WhatsApp usando Twilio."""
     try:
+        # Asegurar que el número tenga el formato correcto con prefijo +
+        if not to_number.startswith('+'):
+            to_number = '+' + to_number
+
+        from_number = TWILIO_WHATSAPP_NUMBER
+        if not from_number.startswith('+'):
+            from_number = '+' + from_number
+
+        logger.info(f"Enviando mensaje de {from_number} a {to_number}")
+
         message = twilio_client.messages.create(
             body=message_body,
-            from_=f'whatsapp:{TWILIO_WHATSAPP_NUMBER}',
+            from_=f'whatsapp:{from_number}',
             to=f'whatsapp:{to_number}'
         )
         logger.info(f"Mensaje enviado a {to_number}: {message_body[:50]}...")
@@ -176,11 +186,14 @@ def clear_previous_jobs():
     scheduled_jobs = {}
 
 
-def schedule_drop_reminders(start_time):
+def schedule_drop_reminders(start_time, user_number=None):
     """
     Programa todos los recordatorios de gotas para el día.
     """
     global scheduled_jobs
+
+    # Usar el número proporcionado o el por defecto
+    target_number = user_number if user_number else USER_WHATSAPP_NUMBER
 
     # Limpiar trabajos anteriores (se borran automáticamente los del día anterior)
     clear_previous_jobs()
@@ -212,7 +225,7 @@ def schedule_drop_reminders(start_time):
     )
 
     # Enviar mensaje de confirmación
-    send_whatsapp_message(USER_WHATSAPP_NUMBER, confirmation_msg)
+    send_whatsapp_message(target_number, confirmation_msg)
 
     # Programar cada recordatorio
     for time_key, slot_data in grouped_schedule:
@@ -237,7 +250,7 @@ def schedule_drop_reminders(start_time):
             scheduler.add_job(
                 send_whatsapp_message,
                 DateTrigger(run_date=slot_data['datetime']),
-                args=[USER_WHATSAPP_NUMBER, reminder_message],
+                args=[target_number, reminder_message],
                 id=job_id,
                 replace_existing=True
             )
@@ -258,7 +271,7 @@ def handle_incoming_message(from_number, message_body):
     # Mensajes de inicio
     if message in ['INICIAR', 'INICIO', 'HOLA', 'Buenos días', 'BUENOS DÍAS', 'START', '1']:
         now = datetime.now(tz)
-        num_reminders = schedule_drop_reminders(now)
+        num_reminders = schedule_drop_reminders(now, from_number)
 
         # No enviar respuesta adicional aquí - el mensaje con la agenda ya se envió en schedule_drop_reminders
         response = (
@@ -487,8 +500,18 @@ def webhook():
 
         logger.info(f"Mensaje recibido de {from_number}: {message_body}")
 
-        # Procesar mensaje
-        response_text = handle_incoming_message(from_number, message_body)
+        # Extraer número de teléfono - mantener formato con prefijo
+        # El número viene como "whatsapp:+529612254590"
+        if from_number and 'whatsapp:' in from_number:
+            # Mantener el + para que Twilio lo reconozca correctamente
+            user_phone = from_number.replace('whatsapp:', '')
+        else:
+            user_phone = from_number
+
+        logger.info(f"Número extraído: {user_phone}")
+
+        # Procesar mensaje pasando el número del usuario
+        response_text = handle_incoming_message(user_phone, message_body)
 
         # Crear respuesta TwiML
         twiml_response = MessagingResponse()
