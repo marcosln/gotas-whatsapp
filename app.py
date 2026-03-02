@@ -40,6 +40,10 @@ TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 TWILIO_WHATSAPP_NUMBER = os.getenv('TWILIO_WHATSAPP_NUMBER')
 USER_WHATSAPP_NUMBER = os.getenv('USER_WHATSAPP_NUMBER', '+529612254590')
 
+# Números para enviar recordatorios (ambos reciben los mensajes)
+GIRLFRIEND_NUMBER = '+529612324432'  # Número de tu novia
+YOUR_NUMBER = '+529612254590'  # Tu número
+
 # Zona horaria de México
 TIMEZONE = 'America/Mexico_City'
 tz = pytz.timezone(TIMEZONE)
@@ -90,6 +94,12 @@ def send_whatsapp_message(to_number, message_body):
     except Exception as e:
         logger.error(f"Error al enviar mensaje: {e}")
         return False
+
+
+def send_to_both_numbers(message_body):
+    """Envía un mensaje a ambos números (novia y tú)."""
+    send_whatsapp_message(GIRLFRIEND_NUMBER, message_body)
+    send_whatsapp_message(YOUR_NUMBER, message_body)
 
 
 def calculate_drop_schedule(start_time):
@@ -225,7 +235,7 @@ def schedule_drop_reminders(start_time, user_number=None):
     )
 
     # Enviar mensaje de confirmación
-    send_whatsapp_message(target_number, confirmation_msg)
+    send_to_both_numbers(confirmation_msg)
 
     # Programar cada recordatorio
     for time_key, slot_data in grouped_schedule:
@@ -242,9 +252,9 @@ def schedule_drop_reminders(start_time, user_number=None):
 
         try:
             scheduler.add_job(
-                send_whatsapp_message,
+                send_to_both_numbers,
                 DateTrigger(run_date=slot_data['datetime']),
-                args=[target_number, reminder_message],
+                args=[reminder_message],
                 id=job_id,
                 replace_existing=True
             )
