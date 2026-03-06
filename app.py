@@ -53,7 +53,7 @@ DROPS_CONFIG = {
     'LOTEREX 0.5%': {'interval_hours': 8, 'emoji': '💊'},
     'SUERO AUTOLOGO': {'interval_hours': 4, 'emoji': '🧴'},
     'SYSTANE HIDRATACION SP': {'interval_hours': 2, 'emoji': '💧'},
-    'CICLOSPORINA A': {'interval_hours': 8, 'emoji': '⚠️'
+    'CICLOSPORINA A': {'interval_hours': 8, 'emoji': '⚠️'},
                       'THEALOZ': {'interval_hours': 1, 'emoji': '👁️'}
 }
 
