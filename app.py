@@ -45,7 +45,7 @@ tz = pytz.timezone(TIMEZONE)
 # Configuración de las gotas: intervalo en horas y offset inicial en minutos
 DROPS_CONFIG = {
     'SYSTANE HIDRATACION SP': {'interval_hours': 2,  'start_offset_minutes': 0,  'emoji': '💧'},
-    'AQUADRAN':               {'interval_hours': 8,  'start_offset_minutes': 10, 'emoji': '🌊'},
+    'AQUADRAN':               {'interval_hours': 4,  'start_offset_minutes': 10, 'emoji': '🌊'},
     'THEALOZ':                {'interval_hours': 1,  'start_offset_minutes': 30, 'emoji': '👁️'},
 }
 
